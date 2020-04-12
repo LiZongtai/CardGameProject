@@ -1,7 +1,9 @@
 ﻿using Protocol.Code;
+using Protocol.Dto;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class AccountHandler : BaseHandler
 {
@@ -13,20 +15,22 @@ public class AccountHandler : BaseHandler
                 Register_SRES((int)value);
                 break;
             default:
+                Debug.Log("wrong subCode");
                 break;
         }
     }
-    //response of resgister server
     private void Register_SRES(int value)
     {
         if (value == -1)
         {
-            EventCenter.Broadcast(EventDefine.Hint, "user name has been registered");
+            Debug.Log("Username is already Registered!");
+            EventCenter.Broadcast(EventDefine.Hint, "Username is already Registered!");
             return;
         }
         if (value == 0)
         {
-            EventCenter.Broadcast(EventDefine.Hint, "register successfully!");
+            Debug.Log("Registration is Successful!");
+            EventCenter.Broadcast(EventDefine.Hint, "Registration is Successful!");
         }
     }
 }

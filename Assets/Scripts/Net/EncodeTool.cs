@@ -44,8 +44,8 @@ public class EncodeTool
                 byte[] data = br.ReadBytes(length);
                 // reflash data buffer
                 cache.Clear();
-                remainLength = (int)(ms.Length - ms.Position);
-                cache.AddRange(br.ReadBytes(remainLength));
+                int remainLengthAgain = (int)(ms.Length - ms.Position);
+                cache.AddRange(br.ReadBytes(remainLengthAgain));
                 return data;
             }
         }

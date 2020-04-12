@@ -14,16 +14,16 @@ public class RegisterPanel : MonoBehaviour
     private Button btn_back;
     private Button btn_pwd;
     private Button btn_register;
-    private bool isShowPassword;
+    private bool isShowPassword = false;
 
     private void Awake()
     {
         EventCenter.AddListener(EventDefine.ShowRegisterPanel, Show);
-        init();
+        Init();
         gameObject.SetActive(false);
     }
 
-    private void init()
+    private void Init()
     {
         input_username = transform.Find("username/input_username").GetComponent<InputField>();
         input_password = transform.Find("password/input_password").GetComponent<InputField>();
@@ -76,7 +76,6 @@ public class RegisterPanel : MonoBehaviour
             return;
         }
         // TODO
-        Debug.Log(input_username.text + input_password.text);
         AccountDto dto = new AccountDto(input_username.text, input_password.text);
         NetMsgCenter.Instance.SendMsg(OpCode.Account, AccountCode.Register_CREQ, dto);
     }

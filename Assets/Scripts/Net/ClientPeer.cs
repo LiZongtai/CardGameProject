@@ -5,7 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
 
-public class ClientPeer : MonoBehaviour
+public class ClientPeer
 {
     private Socket clientSocket;
     private NetMsg msg;
@@ -66,7 +66,7 @@ public class ClientPeer : MonoBehaviour
     {
         isProcessingReceive = true;
         byte[] packet = EncodeTool.DecodePacket(ref receiveCache);
-        if (packet != null)
+        if (packet == null)
         {
             isProcessingReceive = false;
             return;
