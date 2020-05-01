@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Protocol.Code;
+using Protocol.Dto;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -46,6 +48,9 @@ public class LoginPanel : MonoBehaviour
             //Debug.Log("请输入密码");
             return;
         }
+        // login request to server
+        AccountDto dto = new AccountDto(input_username.text, input_password.text);
+        NetMsgCenter.Instance.SendMsg(OpCode.Account, AccountCode.Login_CREQ, dto);
     }
     private void Show()
     {
