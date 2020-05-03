@@ -1215,7 +1215,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isFront: 1
+  isShowing: 0
   CardID: 46
+  CardType: -1
+  CardSubject: -1
 --- !u!1 &8910163943174923690
 GameObject:
   m_ObjectHideFlags: 0

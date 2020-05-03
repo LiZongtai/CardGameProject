@@ -3,11 +3,11 @@
     ShowRegisterPanel,
     ShowLoginPanel,
     Hint,
-    //ShowRankListPanel,
-    //SendRankListDto,
-    //ShowRechargePanel,
-    //UpdateCoinCount,
-    //ShowRoomChoosePanel,
+    ShowRankListPanel,
+    SendRankListDto,
+    ShowRechargePanel,
+    UpdateCoinCount,
+    ShowRoomChoosePanel,
     //VSAI,
     //VSWithSelf,
     //GameOver,
@@ -41,14 +41,22 @@
     StopCardActing,
     PatentShowing,
     PatentEndShowing,
+    InitHandCard,
 
     //Acting
     CardDiscard,
+    CardDiscardFinish,
     DrawCard0,
     DrawCard1,
     DrawCard2,
     DrawCard3,
+    DrawCardFinish,
     Card2Patent,
+    Acted,
+    MaintenanceFinish,
+    DiscardFinish,
+    CardShow,
+    CardShowFinish,
 
     //Game Round
     GameStart,
@@ -57,10 +65,9 @@
     BeforeAction,
     AfterAction,
     BeforeDraw,
+    BeforeDiscard,
     AfterDiscard,
     BeforeMaintenance,
     RoundEnd,
 
-
-    
 }

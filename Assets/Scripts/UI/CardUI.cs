@@ -10,6 +10,7 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler,I
 {
     //public
     public bool isFront;
+    public bool isShowing=false;
     public int CardID = -1;
     public int CardType=-1;
     public int CardSubject=-1;
@@ -234,7 +235,7 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler,I
     #endregion
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (isShowingIE != true && isShowingSE != true)
+        if (isShowingIE != true && isShowingSE != true && isShowing == false)
         {
             EventCenter.Broadcast(EventDefine.CardShowing, gameObject);
             //gameObject.transform.DOLocalMoveY(-150, 0.05f);
@@ -244,7 +245,7 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler,I
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        if (isEndShowingIE == false && isEndShowingSE == false)
+        if (isEndShowingIE == false && isEndShowingSE == false && isShowing==false)
         {
             EventCenter.Broadcast(EventDefine.CardEndShowing, gameObject);
             //gameObject.transform.DOLocalMoveY(-225, 0.05f);

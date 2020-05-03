@@ -7,7 +7,7 @@ using UnityEngine.UI;
 public class Hint : MonoBehaviour
 {
     private Text hintText;
-    public float hintShowTime = 2f;
+    public float hintShowTime = 3f;
     private Color color;
     private void Awake()
     {

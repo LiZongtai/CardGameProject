@@ -138,6 +138,7 @@ public class SciSelect : MonoBehaviour
     }
     private void StartShow()
     {
+        EventCenter.Broadcast<string>(EventDefine.Hint, "Choose Your Scientist");
         Tweener tweener = BackL.DOFade(1, 1);
         BackR.DOFade(1, 1);
         FrontL.DOFade(1, 1);

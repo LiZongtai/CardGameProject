@@ -174,56 +174,6 @@ public class EnemyManager : MonoBehaviour
             //InitHandCards();
         }
     }
-    //private void DrawHandCards(int id)
-    //{
-    //    GameObject cardGO = Instantiate(cardPre, cards.transform, true);
-    //    cardGO.transform.localScale = new Vector2(0.85f, 0.85f);
-    //    cardGO.transform.name = "Card_" + id;
-    //    cardGO.GetComponent<CardUI>().GetCardId(id);
-    //    cardGO.GetComponent<CardUI>().CardInit();
-    //    cardGO.transform.localPosition = cards.transform.localPosition;
-    //    Tweener tweener = cardGO.transform.DOLocalMove(new Vector2(cards.transform.localPosition.x, cards.transform.localPosition.y - 350), 0.5f);
-    //    tweener.OnComplete(() =>
-    //    {
-    //        CardsObjectsLists.Add(cardGO);
-    //        HandCardsShuffle();
-    //    });
-    //}
-    //private void HandCardsShuffle()
-    //{
-    //    for (int i = 0; i < CardsObjectsLists.Count; i++)
-    //    {
-    //        CardsObjectsLists[i].transform.DOLocalMove(new Vector2(cards.transform.localPosition.x + i * 600 / CardsObjectsLists.Count, cards.transform.localPosition.y - 350), 0.3f);
-    //    }
-    //}
-    //private void HandCardsShow(GameObject go)
-    //{
-    //    //for(int i = 0; i < handCards.Count; i++)
-    //    //{
-    //    //    if (go != handCardsObjects[i].gameObject)
-    //    //    {
-    //    //        Debug.Log("Interact invalid");
-    //    //    }
-    //    //}
-    //    int count = go.transform.parent.childCount - 1;
-    //    go.transform.SetSiblingIndex(count);
-    //    go.transform.DOLocalMoveY(-150, 0.02f);
-    //    go.GetComponent<CardUI>().ShowEffect(0.02f);
-    //}
-    //private void HandCardsEndShow(GameObject go)
-    //{
-    //    int count = 0;
-    //    for (int i = 0; i < CardsObjectsLists.Count; i++)
-    //    {
-    //        if (go == CardsObjectsLists[i].gameObject)
-    //        {
-    //            count = i;
-    //        }
-    //    }
-    //    go.transform.DOLocalMoveY(-350, 0.02f);
-    //    go.transform.SetSiblingIndex(count);
-    //    go.GetComponent<CardUI>().EndShowEffect(0.02f);
-    //}
     public void HandCardsDis(int id)
     {
         CardsList.RemoveAt(Id2CardIndex(id));

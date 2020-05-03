@@ -100,9 +100,9 @@ public class PatentUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         patentInfo.SetActive(true);
         
-        Debug.Log("Patent Show");
+        //Debug.Log("Patent Show");
         isShowingPatent = true;
-        Debug.Log(patentInfo.transform.position.x + " " + patentInfo.transform.position.y);
+        //Debug.Log(patentInfo.transform.position.x + " " + patentInfo.transform.position.y);
         patentSubjectMask.color = GameModel.Subject2Color(PatentSubject);
         patentSubjectIcon.sprite = ResourcesManager.GetSubjectSprite("Subject_" + PatentSubject);
         patentName.text = CardDataManager.GetCardName(PatentID);
@@ -138,7 +138,7 @@ public class PatentUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     }
     public void EndPatentInfoShow()
     {
-        Debug.Log("End Patent Show");
+        //Debug.Log("End Patent Show");
         isEndShowingPatent = true;
         Tweener tweener = patentInfo.transform.DOScale(0, 0.3f);
         tweener.OnComplete(() =>
@@ -162,7 +162,7 @@ public class PatentUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         //set position
         Vector3 extV = CheckRect(patentInfo);
-        Debug.Log(extV.x + " " + extV.y);
+        //Debug.Log(extV.x + " " + extV.y);
         patentInfo.transform.position = new Vector2(patentInfo.transform.position.x + 225 - extV.x, patentInfo.transform.position.y - extV.y);
         //patentInfo.transform.localScale = new Vector3(0, 0, 0);
         //
@@ -175,8 +175,8 @@ public class PatentUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         float screenHeight = Screen.height;
         Rect screenRect = new Rect(0, 0, screenWidth, screenHeight);
         Rect goRect = go.GetComponent<RectTransform>().rect;
-        Debug.Log("width_" + goRect.width + " height_" + goRect.height + " x_" + go.transform.position.x + " y_" + go.transform.position.y);
-        Debug.Log(screenRect.xMin + " " + screenRect.yMin + " " + screenRect.xMax + " " + screenRect.yMax);
+        //Debug.Log("width_" + goRect.width + " height_" + goRect.height + " x_" + go.transform.position.x + " y_" + go.transform.position.y);
+        //Debug.Log(screenRect.xMin + " " + screenRect.yMin + " " + screenRect.xMax + " " + screenRect.yMax);
         if (go.transform.position.x - goRect.width / 2 < screenRect.xMin)
         {
             extX = (go.transform.position.x - goRect.width / 2) - screenRect.xMin;
