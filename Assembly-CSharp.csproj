@@ -70,6 +70,7 @@
     <Compile Include="Assets\Scripts\Common\ResourcesManager.cs" />
     <Compile Include="Assets\Scripts\Game\CardDataManager.cs" />
     <Compile Include="Assets\Scripts\Game\ScientistManager.cs" />
+    <Compile Include="Assets\Scripts\Game\Single\CardManager.cs" />
     <Compile Include="Assets\Scripts\Game\Single\EnemyManager.cs" />
     <Compile Include="Assets\Scripts\Game\Single\GameManager.cs" />
     <Compile Include="Assets\Scripts\Game\Single\SelfManager.cs" />

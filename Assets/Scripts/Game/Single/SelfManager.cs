@@ -10,6 +10,8 @@ public class SelfManager : MonoBehaviour
     //public
     public int PatentNum;
     public int CardNum;
+    public int Player=0;
+
     //Int
     private int sciId;
     private int sciLimit;
@@ -32,6 +34,20 @@ public class SelfManager : MonoBehaviour
     private GameObject cardsPoint;
     private GameObject patents;
     public GameObject patentPre;
+
+    //Card Acting
+    private GameObject canvas;
+    private GameObject showPanel;
+    private GameObject cardActing;
+    private GameObject actingCard;
+    private Image maskBG;
+    private Button btn_ie;
+    private Button btn_se;
+    private Button btn_ds;
+    private Button btn_show;
+    private Button maskButton;
+
+    private Transform cardManager;
     
 
     //Scientist Box
@@ -52,8 +68,8 @@ public class SelfManager : MonoBehaviour
     private Text rankNumText;
 
     //List
-    private List<Card> CardsList = new List<Card>();
-    private List<GameObject> CardsObjectsLists = new List<GameObject>();
+    public static List<Card> CardsList;
+    private List<GameObject> CardsObjectsLists;
     private List<Patent> PatentsList = new List<Patent>();
     private List<GameObject> PatentsObjectsList = new List<GameObject>();
 
@@ -64,10 +80,11 @@ public class SelfManager : MonoBehaviour
 
     private Button btn_test;
 
+
     private void Awake()
     {
         Init();
-        
+        ListenerInit();
     }
     private void Start()
     {
@@ -97,12 +114,31 @@ public class SelfManager : MonoBehaviour
         vicNumText = transform.Find("Sci/UserInfoBox/VicNum/VicNumText").GetComponent<Text>();
         rankNumText = transform.Find("Sci/UserInfoBox/RankNum/RankNumText").GetComponent<Text>();
         limitText = transform.Find("Sci/LimitText").GetComponent<Text>();
-        
+        cardManager = transform.Find("Cards");
         cards = transform.Find("Cards").gameObject;
         cardsPoint = transform.Find("Cards/CardsPoint").gameObject;
         patents = transform.Find("Patents").gameObject;
         patentsPoint = transform.Find("Patents/PatentsPoint").localPosition;
-        
+        canvas = GameObject.Find("Canvas");
+        showPanel = canvas.transform.Find("ShowPanel").gameObject;
+        cardActing = canvas.transform.Find("ShowPanel/CardActing").gameObject;
+        btn_ie = canvas.transform.Find("ShowPanel/CardActing/btn_ie").GetComponent<Button>();
+        btn_se = canvas.transform.Find("ShowPanel/CardActing/btn_se").GetComponent<Button>();
+        btn_show = canvas.transform.Find("ShowPanel/CardActing/btn_show").GetComponent<Button>();
+        btn_ds = canvas.transform.Find("ShowPanel/CardActing/btn_ds").GetComponent<Button>();
+        maskButton = canvas.transform.Find("ShowPanel/CardActing/Button").GetComponent<Button>();
+        maskBG = canvas.transform.Find("ShowPanel/CardActing/GameBGMask").GetComponent<Image>();
+        actingCard = canvas.transform.Find("ShowPanel/CardActing/Card").gameObject;
+        CardsList = cards.GetComponent<CardManager>().CardsList;
+        CardsObjectsLists = cards.GetComponent<CardManager>().CardsObjectsLists;
+        //btn_ie = transform.Find("Canvas/ShowPanel/CardActing/btn_ie").GetComponent<Button>();
+        //btn_se = transform.Find("Canvas/ShowPanel/CardActing/btn_se").GetComponent<Button>();
+        //btn_ds = transform.Find("Canvas/ShowPanel/CardActing/btn_ds").GetComponent<Button>();
+        //btn_show = transform.Find("Canvas/ShowPanel/CardActing/btn_show").GetComponent<Button>();
+        btn_ie.interactable = false;
+        btn_se.interactable = false;
+        btn_show.interactable = false;
+        btn_ds.interactable = false;
 
         userInfoBox.SetActive(false);
         sciIcon.DOFade(0, 0);
@@ -114,33 +150,8 @@ public class SelfManager : MonoBehaviour
         circle.DOFade(0, 0);
         sciIcon.gameObject.SetActive(false);
         ScientistManager.GetSciData();
-        EventCenter.AddListener<int>(EventDefine.SciSelected, ShowSelf);
-        EventCenter.AddListener<int>(EventDefine.CardDiscard, HandCardsDis);
-        EventCenter.AddListener(EventDefine.InitHandCard,InitHandCards);
+
         //Debug.Log(GetSciName(Random.Range(0, 6)));
-
-        EventCenter.AddListener<GameObject>(EventDefine.CardShowing, HandCardsShow);
-        EventCenter.AddListener<GameObject>(EventDefine.CardEndShowing, HandCardsEndShow);
-        EventCenter.AddListener<int, int>(EventDefine.Card2Patent, Card2Patent);
-
-        //GameProcess
-        EventCenter.AddListener<int>(EventDefine.DrawCard0, DrawCards);
-        EventCenter.AddListener(EventDefine.BeforeMaintenance, Maintenance);
-        EventCenter.AddListener(EventDefine.BeforeDiscard, ResearchDiscard);
-        EventCenter.AddListener<int>(EventDefine.CardShow, HandCardsShow);
-        EventCenter.AddListener(EventDefine.CardDiscardFinish, () =>
-        {
-            ++discardCount;
-            EventCenter.Broadcast<string>(EventDefine.Hint, "弃置" + (discardNum- discardCount).ToString() + "张牌");
-            //isDiscarding = true;
-        });
-        EventCenter.AddListener(EventDefine.CardShowFinish, () =>
-        {
-            ++showcardCount;
-            EventCenter.Broadcast<string>(EventDefine.Hint, "公开" + (showcardNum - showcardCount).ToString() + "张牌");
-            //isDiscarding = true;
-        });
-
 
         btn_test = transform.Find("btn_test").GetComponent<Button>();
         btn_test.onClick.AddListener(() =>
@@ -151,11 +162,106 @@ public class SelfManager : MonoBehaviour
             }
         });
     }
+    private void ListenerInit()
+    {
+        //Self
+        EventCenter.AddListener<int>(EventDefine.SciSelected, ShowSelf);
+        EventCenter.AddListener<int>(EventDefine.CardDiscard, HandCardsDis);
+        EventCenter.AddListener(EventDefine.InitHandCard, InitHandCards);
+
+        //Card Ani
+        EventCenter.AddListener<GameObject>(EventDefine.CardShowing, HandCardsShow);
+        EventCenter.AddListener<GameObject>(EventDefine.CardEndShowing, HandCardsEndShow);
+        EventCenter.AddListener<int, int>(EventDefine.Card2Patent, Card2Patent);
+        EventCenter.AddListener<GameObject>(EventDefine.CardActing, CardActing);
+        EventCenter.AddListener(EventDefine.StopCardActing, StopCardActing);
+
+        //GameProcess
+        EventCenter.AddListener<int>(EventDefine.s2_BeforeRound, BeforeRound);
+        EventCenter.AddListener<int>(EventDefine.s3_BeforeAction, BeforeAction);
+        EventCenter.AddListener<int>(EventDefine.s4_AfterAction, AfterAction);
+        EventCenter.AddListener<int>(EventDefine.s5_BeforeDraw, BeforeDraw);
+        EventCenter.AddListener<int>(EventDefine.s6_BeforeDiscard, ResearchDiscard);
+        EventCenter.AddListener<int>(EventDefine.s7_AfterDiscard, AfterDiscard);
+        EventCenter.AddListener<int>(EventDefine.s8_BeforeMaintenance, Maintenance);
+        EventCenter.AddListener<int, int>(EventDefine.CardDraw, DrawCards);
+        EventCenter.AddListener<int>(EventDefine.CardShow, HandCardsShow);
+        EventCenter.AddListener(EventDefine.CardDiscardFinish, () =>
+        {
+            ++discardCount;
+            EventCenter.Broadcast<string>(EventDefine.Hint, "弃置" + (discardNum - discardCount).ToString() + "张牌");
+            //isDiscarding = true;
+        });
+        EventCenter.AddListener(EventDefine.CardShowFinish, () =>
+        {
+            ++showcardCount;
+            EventCenter.Broadcast<string>(EventDefine.Hint, "公开" + (showcardNum - showcardCount).ToString() + "张牌");
+            //isDiscarding = true;
+        });
+
+        //Button
+        btn_ie.onClick.AddListener(ActingIE);
+        btn_se.onClick.AddListener(ActingSE);
+        btn_ds.onClick.AddListener(ActingDS);
+        btn_show.onClick.AddListener(ActingShow);
+        maskButton.onClick.AddListener(StopCardActing);
+    }
     private void ShowSelf(int id)
     {
         ShowSci(id);
 
         //InitHandCards();
+    }
+    #endregion
+    #region Action
+    private void CardActing(GameObject go)
+    {
+        showPanel.SetActive(true);
+        cardActing.SetActive(true);
+        actingCard.SetActive(true);
+        maskBG.DOFade((float)0.75, 0.05f);
+        cardActing.GetComponent<Image>().DOFade((float)0.75, 0.05f);
+        actingCard.GetComponent<CardUI>().GetCardId(go.GetComponent<CardUI>().CardID);
+        actingCard.GetComponent<CardUI>().CardInit();
+        actingCard.GetComponent<CardUI>().ShowEffect(0.05f);
+
+    }
+    private void ActingIE()
+    {
+        StopCardActing();
+        Debug.Log("Acting IE");
+        EventCenter.Broadcast(EventDefine.IEaction, actingCard.GetComponent<CardUI>().CardID, actingCard.GetComponent<CardUI>().CardSubject, actingCard.GetComponent<CardUI>().CardType);
+    }
+    private void ActingSE()
+    {
+        EventCenter.Broadcast(EventDefine.Card2Patent, actingCard.GetComponent<CardUI>().CardID, actingCard.GetComponent<CardUI>().CardSubject);
+        Debug.Log("Acting SE");
+    }
+    private void ActingDS()
+    {
+        StopCardActing();
+        Debug.Log("Acting Ab");
+        EventCenter.Broadcast(EventDefine.CardDiscard, actingCard.GetComponent<CardUI>().CardID);
+        Card card = new Card(actingCard.GetComponent<CardUI>().CardID, actingCard.GetComponent<CardUI>().CardSubject, actingCard.GetComponent<CardUI>().CardType);
+        GameManager.SetDisPile(card);
+    }
+    private void ActingShow()
+    {
+        StopCardActing();
+        Debug.Log("Acting Show");
+        EventCenter.Broadcast(EventDefine.CardShow, actingCard.GetComponent<CardUI>().CardID);
+    }
+    public void StopCardActing()
+    {
+        Tweener tweener = maskButton.image.DOFade(0, 0.05f);
+        actingCard.GetComponent<CardUI>().EndShowEffect(0.05f);
+        maskBG.DOFade(0, 0.05f);
+        tweener.OnComplete(() =>
+        {
+            showPanel.SetActive(false);
+            cardActing.SetActive(false);
+            actingCard.SetActive(false);
+        });
     }
     #endregion
     #region Scientist
@@ -194,20 +300,15 @@ public class SelfManager : MonoBehaviour
         showcardCount = 0;
         for(int i = CardsObjectsLists.Count; i < CardsList.Count; i++)
         {
-            //TODO
-            //if (CardsObjectsLists.Count != 0)
-            //{
-            //    if (CardsObjectsLists[i].GetComponent<CardUI>().isShowing == true)
-            //    {
-            //        CardsObjectsLists[i].GetComponent<CardUI>().EndShowEffect(0.02f);
-            //        CardsObjectsLists[i].GetComponent<CardUI>().isShowing = false;
-            //    }
-            //}
             DrawHandCards(CardsList[i].Id);
         }
     }
-    private void DrawCards(int num)
+    private void DrawCards(int player, int num)
     {
+        if (player != Player)
+        {
+            return;
+        }
         for(int i = 0; i < num; i++)
         {
             Card card = GameManager.cardPile[0];
@@ -221,6 +322,7 @@ public class SelfManager : MonoBehaviour
 
         }
     }
+
     private void DrawHandCards(int id)
     {
         GameObject cardGO = Instantiate(cardPre, cards.transform, true);
@@ -289,7 +391,20 @@ public class SelfManager : MonoBehaviour
         Tweener tweener = go.transform.DOScale(0.2f, 0.1f);
         tweener.OnComplete(() =>
         {
-            EventCenter.Broadcast(EventDefine.CardDiscardFinish);
+            if (GameManager.isBeforeDiscard)
+            {
+                Debug.Log("if");
+                EventCenter.Broadcast(EventDefine.CardDiscardFinish);
+            }
+            else if (GameManager.isBeforeRound)
+            {
+                Debug.Log("else if");
+                EventCenter.Broadcast(EventDefine.Acted);
+            }
+            else
+            {
+                Debug.Log("else");
+            }
             Destroy(go);
             CardsObjectsLists.RemoveAt(ii);
             CardsList.RemoveAt(ii);
@@ -337,7 +452,6 @@ public class SelfManager : MonoBehaviour
                 Card cd = CardsList[i];
                 tweener.OnComplete(() =>
                 {
-                    EventCenter.Broadcast(EventDefine.StopCardActing);
                     CardsList.Remove(cd);
                     CardsObjectsLists.Remove(go);
                     Destroy(go);
@@ -345,6 +459,8 @@ public class SelfManager : MonoBehaviour
                     PatentsList.Add(patent);
                     GameManager.patentAll.Add(patent);
                     CardNum = CardsList.Count;
+                    EventCenter.Broadcast(EventDefine.StopCardActing);
+                    EventCenter.Broadcast(EventDefine.Acted);
                     return;
                 });
             }
@@ -371,27 +487,166 @@ public class SelfManager : MonoBehaviour
             HandCardsShuffle();
         });
     }
+    
     private void Card2Patent(int id,int subject)
     {
         AddPatent(id, subject); 
     }
     #endregion
     #region Game Process
-    private void Maintenance()
+    private void BeforeRound(int player)
     {
+        if (player != Player)
+        {
+            return;
+        }
+        btn_ie.interactable = false;
+        btn_se.interactable = false;
+        btn_show.interactable = false;
+        btn_ds.interactable = false;
+        for (int i = 0; i < CardsList.Count; i++)
+        {
+            if (CardsObjectsLists[i].GetComponent<CardUI>().isShowing == true)
+            {
+                CardsObjectsLists[i].transform.DOLocalMoveY(-350, 0.02f);
+                CardsObjectsLists[i].GetComponent<CardUI>().EndShowEffect(0.02f);
+                CardsObjectsLists[i].GetComponent<CardUI>().isShowing = false;
+            }
+        }
+
+    }
+    /// <summary>
+    /// 开始行动前，设置交互性
+    /// </summary>
+    /// <param name="player"></param>
+    private void BeforeAction(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        btn_ie.interactable = true;
+        btn_se.interactable = true;
+        btn_show.interactable = false;
+        btn_ds.interactable = true;
+    }
+    /// <summary>
+    /// 行动后，设置交互性
+    /// </summary>
+    /// <param name="player"></param>
+    private void AfterAction(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        btn_ie.interactable = false;
+        btn_se.interactable = false;
+        btn_show.interactable = false;
+        btn_ds.interactable = false;
+        CardNum = CardsList.Count;
+    }
+    /// <summary>
+    /// 研究阶段补充手牌到上限
+    /// </summary>
+    private void BeforeDraw(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        int drawNum = sciLimit - CardNum;
+        if (drawNum <= 0)
+        {
+            GameManager.SetDrawNum(0, 0);
+            EventCenter.Broadcast(EventDefine.DrawCardFinish);
+        }
+        else
+            GameManager.SetDrawNum(0, drawNum);
+    }
+    /// <summary>
+    /// 研究阶段 弃牌
+    /// </summary>
+    private void ResearchDiscard(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        discardNum = CardNum - sciLimit;
+        if(sciLimit - CardNum >=0)
+        {
+            discardNum = 0;
+            EventCenter.Broadcast(EventDefine.DiscardFinish);
+            EventCenter.Broadcast<string>(EventDefine.Hint,"研究阶段结束");
+        }
+        else
+        {
+            btn_ds.interactable = true;
+            StartCoroutine(WaitForDiscard());
+        }
+        //Debug.Log("disCardNum = " + discardNum.ToString());
+        //Debug.Log("CardNum = " + CardNum.ToString());
+    }
+
+    /// <summary>
+    /// 弃牌
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator WaitForDiscard()
+    {
+        EventCenter.Broadcast<string>(EventDefine.Hint, "弃置" + (discardNum).ToString() + "张牌");
+        while (discardCount!=discardNum){
+            Debug.Log("is Waiting for discard");
+            yield return null;
+        }
+        discardCount = 0;
+        discardNum = 0;
+        EventCenter.Broadcast(EventDefine.DiscardFinish);
+        EventCenter.Broadcast<string>(EventDefine.Hint, "研究阶段结束");
+        yield return null;
+    }
+    /// <summary>
+    /// 研究阶段结束，设置交互性
+    /// </summary>
+    /// <param name="player"></param>
+    private void AfterDiscard(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        btn_ds.interactable = false;
+    }
+    /// <summary>
+    /// 维护阶段公开手牌
+    /// </summary>
+    private void Maintenance(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
         showcardNum = PatentNum;
         if (showcardNum == 0)
         {
             EventCenter.Broadcast<string>(EventDefine.Hint, "维护阶段结束");
+            btn_show.interactable = false;
             EventCenter.Broadcast(EventDefine.MaintenanceFinish);
+
         }
         else
         {
+            btn_show.interactable = true;
             StartCoroutine(WaitForShow());
         }
-        Debug.Log("Patents num"+ showcardNum);
-        
+        Debug.Log("Patents num" + showcardNum);
+
     }
+    /// <summary>
+    /// 公开手牌
+    /// </summary>
+    /// <returns></returns>
     private IEnumerator WaitForShow()
     {
         EventCenter.Broadcast<string>(EventDefine.Hint, "公开" + showcardNum.ToString() + "张牌");
@@ -404,35 +659,7 @@ public class SelfManager : MonoBehaviour
         showcardNum = 0;
         EventCenter.Broadcast(EventDefine.MaintenanceFinish);
         EventCenter.Broadcast<string>(EventDefine.Hint, "维护阶段结束");
-        yield return null;
-    }
-    private void ResearchDiscard()
-    {
-        discardNum = CardNum - sciLimit;
-        if(sciLimit - CardNum >=0)
-        {
-            discardNum = 0;
-            EventCenter.Broadcast(EventDefine.DiscardFinish);
-            EventCenter.Broadcast<string>(EventDefine.Hint,"研究阶段结束");
-        }
-        else
-        {       
-            StartCoroutine(WaitForDiscard());
-        }
-        //Debug.Log("disCardNum = " + discardNum.ToString());
-        //Debug.Log("CardNum = " + CardNum.ToString());
-    }
-    private IEnumerator WaitForDiscard()
-    {
-        EventCenter.Broadcast<string>(EventDefine.Hint, "弃置" + (discardNum).ToString() + "张牌");
-        while (discardCount!=discardNum){
-            Debug.Log("is Waiting for discard");
-            yield return null;
-        }
-        discardCount = 0;
-        discardNum = 0;
-        EventCenter.Broadcast(EventDefine.DiscardFinish);
-        EventCenter.Broadcast<string>(EventDefine.Hint, "研究阶段结束");
+        btn_show.interactable = false;
         yield return null;
     }
     #endregion

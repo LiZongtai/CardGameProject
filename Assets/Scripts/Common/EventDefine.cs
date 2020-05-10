@@ -45,6 +45,7 @@
 
     //Acting
     CardDiscard,
+    CardDraw,
     CardDiscardFinish,
     DrawCard0,
     DrawCard1,
@@ -52,6 +53,11 @@
     DrawCard3,
     DrawCardFinish,
     Card2Patent,
+
+    IEaction,
+    Infiltration,
+    InfiltrationRes,
+    InfiltrationFinish,
     Acted,
     MaintenanceFinish,
     DiscardFinish,
@@ -60,14 +66,23 @@
 
     //Game Round
     GameStart,
-    RoundStart,
-    BeforeRound,
-    BeforeAction,
-    AfterAction,
-    BeforeDraw,
-    BeforeDiscard,
-    AfterDiscard,
-    BeforeMaintenance,
-    RoundEnd,
+    s0_RoundStart,
+    s1_PlayRoundStart,
+    s2_BeforeRound,
+    s3_BeforeAction,
+    s4_AfterAction,
+    s5_BeforeDraw,
+    s6_BeforeDiscard,
+    s7_AfterDiscard,
+    s8_BeforeMaintenance,
+    s9_PlayerRoundEnd,
+    s10_RoundEnd,
+    r0_attack,
+    r1_attacked,
+    r2_defend,
+    r3_defended,
+
+    //Card
+    CardSE,
 
 }

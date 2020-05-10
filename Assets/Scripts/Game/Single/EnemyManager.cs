@@ -10,10 +10,18 @@ public class EnemyManager : MonoBehaviour
     //public
     public int PatentNum;
     public int Player;
-    public int SciId;
+    public int CardNum;
+    public GameObject cardPre;
+    public GameObject patentPre;
+
+    //Int
+    public int sciId;
+    private int sciLimit;
+    private int sciSubject;
 
     //Bool
     private bool isIniting = true;
+    private bool isBeingInf = false;
 
     //GameObject
     private GameObject Sci;
@@ -21,7 +29,7 @@ public class EnemyManager : MonoBehaviour
     //public GameObject cardPre;
     //private GameObject cards;
     private GameObject patents;
-    public GameObject patentPre;
+    
 
 
     //Scientist Box
@@ -34,11 +42,15 @@ public class EnemyManager : MonoBehaviour
     private Image subject;
     private Image subjectMask;
 
+    //Button
+    private Button lockon;
+
     //Text
     private Text rankText;
     private Text vicRateText;
     private Text vicNumText;
     private Text rankNumText;
+    private Text limitText;
 
     //List
     private List<Card> CardsList = new List<Card>();
@@ -52,6 +64,7 @@ public class EnemyManager : MonoBehaviour
     private void Awake()
     {
         Init();
+        ListenerInit();
     }
     // Start is called before the first frame update
     void Start()
@@ -62,7 +75,6 @@ public class EnemyManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
     }
     #region Init
     private void Init()
@@ -83,12 +95,13 @@ public class EnemyManager : MonoBehaviour
         vicRateText = transform.Find("Sci/UserInfoBox/VicRate/VicRateText").GetComponent<Text>();
         vicNumText = transform.Find("Sci/UserInfoBox/VicNum/VicNumText").GetComponent<Text>();
         rankNumText = transform.Find("Sci/UserInfoBox/RankNum/RankNumText").GetComponent<Text>();
-
+        limitText = transform.Find("Sci/LimitText").GetComponent<Text>();
         //cards = transform.Find("Cards").gameObject;
         //cardsPoint = transform.Find("Cards/CardsPoint").localPosition;
         patents = transform.Find("Patents").gameObject;
         patentsPoint = transform.Find("Patents/PatentsPoint").localPosition;
-
+        lockon = transform.Find("LockOn").GetComponent<Button>();
+        lockon.gameObject.SetActive(false);
 
         userInfoBox.SetActive(false);
         SciIcon.DOFade(0, 0);
@@ -103,25 +116,247 @@ public class EnemyManager : MonoBehaviour
         //EventCenter.AddListener<int>(EventDefine.SciSelected, ShowSelf);
         //EventCenter.AddListener<int>(EventDefine.CardDiscard, HandCardsDis);
         //Debug.Log(GetSciName(Random.Range(0, 6)));
-
         //EventCenter.AddListener<GameObject>(EventDefine.CardShowing, HandCardsShow);
         //EventCenter.AddListener<GameObject>(EventDefine.CardEndShowing, HandCardsEndShow);
-        switch (Player) 
-        {
-            case 1:
-                EventCenter.AddListener<int>(EventDefine.DrawCard1, DrawCards);
-                break;
-            case 2:
-                EventCenter.AddListener<int>(EventDefine.DrawCard2, DrawCards);
-                break;
-            case 3:
-                EventCenter.AddListener<int>(EventDefine.DrawCard3, DrawCards);
-                break;
-        }
         //EventCenter.AddListener<int, int>(EventDefine.Card2Patent, Card2Patent);
-        SciId = Random.Range(0, 6);
-        ShowSelf(SciId);
+        sciId = UnityEngine.Random.Range(0, 6);
+        ShowSelf(sciId);
     }
+    private void ListenerInit()
+    {
+        EventCenter.AddListener<int, int>(EventDefine.CardDraw, DrawCards);
+
+        //Button
+        lockon.onClick.AddListener(() =>
+        {
+            EventCenter.Broadcast(EventDefine.InfiltrationRes, Player);
+        });
+
+        //GameProcess
+        EventCenter.AddListener<int>(EventDefine.s2_BeforeRound, BeforeRound);
+        EventCenter.AddListener<int>(EventDefine.s3_BeforeAction, BeforeAction);
+        EventCenter.AddListener<int>(EventDefine.s4_AfterAction, AfterAction);
+        EventCenter.AddListener<int>(EventDefine.s5_BeforeDraw, BeforeDraw);
+        EventCenter.AddListener<int>(EventDefine.s6_BeforeDiscard, ResearchDiscard);
+        EventCenter.AddListener<int>(EventDefine.s7_AfterDiscard, AfterDiscard);
+        EventCenter.AddListener<int>(EventDefine.s8_BeforeMaintenance, Maintenance);
+
+        //CardAction
+        EventCenter.AddListener(EventDefine.Infiltration, Infiltration);
+        EventCenter.AddListener<int>(EventDefine.InfiltrationRes, InfiltrationRes);
+    }
+    #region Game Process
+    /// <summary>
+    /// 回合开始前
+    /// </summary>
+    /// <param name="player"></param>
+    private void BeforeRound(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        CardNum = CardsList.Count;
+    }
+    /// <summary>
+    /// 行动阶段前
+    /// </summary>
+    /// <param name="player"></param>
+    private void BeforeAction(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        int randDis = Random.Range(0, CardNum);
+        Card card = CardsList[randDis];
+        Debug.Log("Player " + Player + " discard " + card.Id);
+        CardsList.Remove(card);
+        GameManager.SetDisPile(card);
+        EventCenter.Broadcast(EventDefine.Acted);
+    }
+    /// <summary>
+    /// 行动阶段后
+    /// </summary>
+    /// <param name="player"></param>
+    private void AfterAction(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        CardNum = CardsList.Count;
+    }
+    /// <summary>
+    /// 研究阶段摸牌至手牌上限
+    /// </summary>
+    /// <param name="player"></param>
+    private void BeforeDraw(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        int drawNum = sciLimit - CardNum;
+        if (drawNum <= 0)
+        {
+            GameManager.SetDrawNum(0, 0);
+            EventCenter.Broadcast(EventDefine.DrawCardFinish);
+        }
+        else
+        {
+            Debug.Log("Player " + Player + " Draw Card Num: " + drawNum);
+            GameManager.SetDrawNum(Player, drawNum);
+        }
+        CardNum = CardsList.Count;
+    }
+    /// <summary>
+    /// 研究阶段弃牌
+    /// </summary>
+    /// <param name="player"></param>
+    private void ResearchDiscard(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        int discardNum = CardNum - sciLimit;
+        if (sciLimit - CardNum >= 0)
+        {
+            discardNum = 0;
+            EventCenter.Broadcast(EventDefine.DiscardFinish);
+            EventCenter.Broadcast<string>(EventDefine.Hint, "研究阶段结束");
+        }
+        else
+        {
+            int randDis = Random.Range(0, CardNum);
+            Card card = CardsList[randDis];
+            Debug.Log("Player " + Player + " discard " + card.Id);
+            CardsList.Remove(card);
+            GameManager.SetDisPile(card);
+            EventCenter.Broadcast(EventDefine.DiscardFinish);
+        }
+    }
+    /// <summary>
+    /// 弃牌后
+    /// </summary>
+    /// <param name="player"></param>
+    private void AfterDiscard(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        CardNum = CardsList.Count;
+    }
+    /// <summary>
+    /// 维护阶段
+    /// </summary>
+    /// <param name="player"></param>
+    private void Maintenance(int player)
+    {
+        if (player != Player)
+        {
+            return;
+        }
+        EventCenter.Broadcast(EventDefine.MaintenanceFinish);
+        Debug.Log("Player" + Player + " CardNum: " + CardNum);
+    }
+
+    #endregion
+    #region Card Action
+    private void Infiltration()
+    {
+        for (int i = 0; i < CardNum; i++)
+        {
+            Debug.Log("Player " + Player + " Card Type: " + CardsList[i].Type);
+        }
+        lockon.gameObject.SetActive(true);
+        lockon.interactable = false;
+        Tweener tweener = lockon.transform.DOScale(0.15f, 0.2f);
+        tweener.OnComplete(() =>
+        {
+            lockon.interactable = true;
+        });
+    }
+    private void InfiltrationRes(int player)
+    {
+        if (player != Player)
+        {
+            lockon.interactable = false;
+            Tweener tweener = lockon.transform.DOScale(0, 0.2f);
+            tweener.OnComplete(() =>
+            {
+                lockon.gameObject.SetActive(false);
+            });
+            return;
+        }
+        else
+        {
+            isBeingInf = true;
+            lockon.interactable = false;
+            Card defCard = SearchDefenseCard();
+            //Can't Defence
+            if (defCard == null)
+            {
+                Debug.Log("Can't Defence");
+                Card patentCard = SearchRandomCard();
+                AddPatent(patentCard.Id, patentCard.Subject);
+            }
+            //Have Defence Card
+            else
+            {
+                Debug.Log("Have Defence Card");
+                CardShow(defCard.Id);
+            }
+
+        }
+    }
+    private void InfiltrationFinish()
+    {
+
+        Tweener tweener = lockon.transform.DOScale(0, 0.2f);
+        tweener.OnComplete(() =>
+        {
+            isBeingInf = false;
+            lockon.gameObject.SetActive(false);
+            EventCenter.Broadcast(EventDefine.InfiltrationFinish);
+        });
+    }
+    private Card SearchDefenseCard()
+    {
+        for (int i = 0; i < CardNum; i++)
+        {
+            if (CardsList[i].Type == 1)
+            {
+                return CardsList[i];
+            }
+        }
+        return null;
+    }
+    private Card SearchInfiltrationCard()
+    {
+        for (int i = 0; i < CardNum; i++)
+        {
+            if (CardsList[i].Type == 0)
+            {
+                return CardsList[i];
+            }
+        }
+        return null;
+    }
+    private Card SearchRandomCard()
+    {
+        if (CardNum == 0)
+        {
+            return null;
+        }
+        else
+        {
+            return CardsList[Random.Range(0, CardNum)];
+        }
+    }
+    #endregion
     private void ShowSelf(int id)
     {
         ShowSci(id);
@@ -129,9 +364,12 @@ public class EnemyManager : MonoBehaviour
     }
     #endregion
     #region Scientist
-    private void ShowSci(int sciId)
+    private void ShowSci(int id)
     {
         userNameText.text = "Player " + Player;
+        sciId = id;
+        sciSubject = ScientistManager.GetSciSubject(sciId);
+        userNameText.text = Models.GameModel.userDto.UserName;
         SciIcon.gameObject.SetActive(true);
         SciIcon.sprite = ResourcesManager.GetSciSprite(ScientistManager.GetSciIcon(sciId));
         SciPanel.sprite = ResourcesManager.GetPanelSprite("Panel_" + ScientistManager.GetSciSubject(sciId));
@@ -139,6 +377,8 @@ public class EnemyManager : MonoBehaviour
         subjectMask.color = GameModel.Subject2Color(ScientistManager.GetSciSubject(sciId));
         SciNameText.text = ScientistManager.GetSciName(sciId);
         SciSkillText.text = ScientistManager.GetSciSkill(sciId);
+        sciLimit = ScientistManager.GetSciLimit(sciId);
+        limitText.text = sciLimit.ToString();
         Tweener tweener = SciIcon.DOFade(1, 3);
         SciNameText.DOFade(1, 3);
         SciSkillText.DOFade(1, 3);
@@ -161,18 +401,59 @@ public class EnemyManager : MonoBehaviour
     //        DrawHandCards(CardsList[i].Id);
     //    }
     //}
-    private void DrawCards(int num)
+    private void DrawCards(int player, int num)
     {
+        if (player != Player)
+        {
+            return;
+        }
         for (int i = 0; i < num; i++)
         {
             Card card = GameManager.cardPile[0];
             CardsList.Add(card);
             GameManager.cardPile.RemoveAt(0);
+            CardNum = CardsList.Count;
+            
         }
-        if (isIniting == false)
+        EventCenter.Broadcast(EventDefine.DrawCardFinish);
+
+    }
+    private void CardShow(int id)
+    {
+        int ii = Id2CardIndex(id);
+        Card card = CardsList[ii];
+        GameObject cardGO = Instantiate(cardPre, gameObject.transform, true);
+        cardGO.transform.localScale = new Vector2(0, 0);
+        cardGO.transform.name = "Card_" + id;
+        cardGO.GetComponent<CardUI>().GetCardId(id);
+        cardGO.GetComponent<CardUI>().CardInit();
+        cardGO.transform.localPosition = new Vector2(0, 0);
+        Tweener tweener = cardGO.transform.DOLocalMove(new Vector2(300, -100), 0.3f);
+        cardGO.transform.DOScale(0.7f, 0.3f);
+        cardGO.GetComponent<CardUI>().isShowing = true;
+        cardGO.GetComponent<CardUI>().ShowEffect(0.3f);
+        tweener.OnComplete(() =>
         {
-            //InitHandCards();
-        }
+            if (isBeingInf)
+            {
+                CardsList.Remove(card);
+                InfiltrationFinish();
+                StartCoroutine(CardShowForDefence(id));
+            }
+        });
+    }
+    private IEnumerator CardShowForDefence(int id)
+    {
+        yield return new WaitForSeconds(2f);
+        GameObject cardGO = transform.Find("Card_" + id).gameObject;
+        cardGO.GetComponent<CardUI>().EndShowEffect(0.2f);
+        cardGO.transform.DOLocalMove(new Vector2(300, -400), 0.2f);
+        Tweener tweener = cardGO.transform.DOScale(0, 0.2f);
+        tweener.OnComplete(() =>
+        {
+            Destroy(cardGO);
+            CardNum = CardsList.Count;
+        });
     }
     public void HandCardsDis(int id)
     {
@@ -232,6 +513,10 @@ public class EnemyManager : MonoBehaviour
             PatentsObjectsList.Add(patentGO);
             GameManager.patentObjectAll.Add(patentGO);
             patentGO.GetComponent<PatentUI>().PatentInfoPosition();
+            if (isBeingInf)
+            {
+                InfiltrationFinish();
+            }
         });
     }
     private void Card2Patent(int id, int subject)
