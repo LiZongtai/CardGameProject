@@ -25,6 +25,7 @@ public class SelfManager : MonoBehaviour
     //Bool
     private bool isIniting = true;
     private bool isDiscarding = false;
+    private bool isBeforeAction = false;
 
     //GameObject
     private GameObject Sci;
@@ -42,13 +43,18 @@ public class SelfManager : MonoBehaviour
     private GameObject actingCard;
     private Image maskBG;
     private Button btn_ie;
+    private Text btn_ie_text;
     private Button btn_se;
     private Button btn_ds;
     private Button btn_show;
     private Button maskButton;
-
+    private Image cardShowMask;
     private Transform cardManager;
-    
+    private int PlayerInf;
+    private int PlayerDef;
+    private bool isBeingInf=false;
+    private bool isInf = false;
+    private bool isNoDefCard = false;
 
     //Scientist Box
     private Image sciIcon;
@@ -68,7 +74,7 @@ public class SelfManager : MonoBehaviour
     private Text rankNumText;
 
     //List
-    public static List<Card> CardsList;
+    public List<Card> CardsList;
     private List<GameObject> CardsObjectsLists;
     private List<Patent> PatentsList = new List<Patent>();
     private List<GameObject> PatentsObjectsList = new List<GameObject>();
@@ -77,7 +83,7 @@ public class SelfManager : MonoBehaviour
     private Vector3 patentsPoint;
 
     //Button
-
+    private Button lockon;
     private Button btn_test;
 
 
@@ -120,9 +126,11 @@ public class SelfManager : MonoBehaviour
         patents = transform.Find("Patents").gameObject;
         patentsPoint = transform.Find("Patents/PatentsPoint").localPosition;
         canvas = GameObject.Find("Canvas");
+        cardShowMask = canvas.transform.Find("CardShowMask").GetComponent<Image>();
         showPanel = canvas.transform.Find("ShowPanel").gameObject;
         cardActing = canvas.transform.Find("ShowPanel/CardActing").gameObject;
         btn_ie = canvas.transform.Find("ShowPanel/CardActing/btn_ie").GetComponent<Button>();
+        btn_ie_text = canvas.transform.Find("ShowPanel/CardActing/btn_ie/Text").GetComponent<Text>();
         btn_se = canvas.transform.Find("ShowPanel/CardActing/btn_se").GetComponent<Button>();
         btn_show = canvas.transform.Find("ShowPanel/CardActing/btn_show").GetComponent<Button>();
         btn_ds = canvas.transform.Find("ShowPanel/CardActing/btn_ds").GetComponent<Button>();
@@ -131,6 +139,9 @@ public class SelfManager : MonoBehaviour
         actingCard = canvas.transform.Find("ShowPanel/CardActing/Card").gameObject;
         CardsList = cards.GetComponent<CardManager>().CardsList;
         CardsObjectsLists = cards.GetComponent<CardManager>().CardsObjectsLists;
+        lockon = transform.Find("LockOn").GetComponent<Button>();
+        lockon.gameObject.SetActive(false);
+        lockon.interactable = false;
         //btn_ie = transform.Find("Canvas/ShowPanel/CardActing/btn_ie").GetComponent<Button>();
         //btn_se = transform.Find("Canvas/ShowPanel/CardActing/btn_se").GetComponent<Button>();
         //btn_ds = transform.Find("Canvas/ShowPanel/CardActing/btn_ds").GetComponent<Button>();
@@ -167,14 +178,19 @@ public class SelfManager : MonoBehaviour
         //Self
         EventCenter.AddListener<int>(EventDefine.SciSelected, ShowSelf);
         EventCenter.AddListener<int>(EventDefine.CardDiscard, HandCardsDis);
-        EventCenter.AddListener(EventDefine.InitHandCard, InitHandCards);
+        EventCenter.AddListener<int>(EventDefine.InitHandCard, InitHandCards);
 
         //Card Ani
         EventCenter.AddListener<GameObject>(EventDefine.CardShowing, HandCardsShow);
         EventCenter.AddListener<GameObject>(EventDefine.CardEndShowing, HandCardsEndShow);
-        EventCenter.AddListener<int, int>(EventDefine.Card2Patent, Card2Patent);
+        EventCenter.AddListener<int, int, int>(EventDefine.Card2Patent, Card2Patent);
         EventCenter.AddListener<GameObject>(EventDefine.CardActing, CardActing);
         EventCenter.AddListener(EventDefine.StopCardActing, StopCardActing);
+
+        //Card Action
+        EventCenter.AddListener<int>(EventDefine.Infiltration, Infiltration);
+        EventCenter.AddListener<int, int>(EventDefine.InfiltrationRes, InfiltrationRes);
+        EventCenter.AddListener<int, int>(EventDefine.InfiltrationFinish, InfiltrationFinish);
 
         //GameProcess
         EventCenter.AddListener<int>(EventDefine.s2_BeforeRound, BeforeRound);
@@ -224,17 +240,82 @@ public class SelfManager : MonoBehaviour
         actingCard.GetComponent<CardUI>().GetCardId(go.GetComponent<CardUI>().CardID);
         actingCard.GetComponent<CardUI>().CardInit();
         actingCard.GetComponent<CardUI>().ShowEffect(0.05f);
+        int type = actingCard.GetComponent<CardUI>().CardType;
+        if (type == 0)
+        {
+            if (isBeforeAction)
+            {
+                btn_ie.interactable = true;
+                btn_se.interactable = true;
+            }
+            else if (isBeingInf)
+            {
+                btn_se.interactable = true;
+                btn_ie.interactable = true;
+            }
+            else
+            {
+                btn_se.interactable = false;
+                btn_ie.interactable = false;
+            }
+            btn_ie_text.text = "渗透";
+        }
+        else if(type == 1)
+        {
+            if (isBeforeAction)
+            {
+                btn_se.interactable = true;
+                btn_ie.interactable = false;
+            }
+            else if (isBeingInf)
+            {
+                btn_ie.interactable = true;
+                btn_se.interactable = true;
+            }
+            else
+            {
+                btn_ie.interactable = false;
+                btn_se.interactable = false;
+            }
+            btn_ie_text.text = "缓冲";
+        }
+        else
+        {
+            if (isBeforeAction)
+            {
+                btn_se.interactable = true;
+                btn_ie.interactable = true;
+            }
+            else if (isBeingInf)
+            {
+                btn_ie.interactable = false;
+                btn_se.interactable = true;
+            }
+            else
+            {
+                btn_se.interactable = false;
+                btn_ie.interactable = false;
+            }
+            btn_ie_text.text = "即时效果";
+        }
+        if(isBeingInf && isNoDefCard)
+        {
 
+        }
+    }
+    private IEnumerator Delay(float time)
+    {
+        yield return new WaitForSeconds(time);
     }
     private void ActingIE()
     {
         StopCardActing();
         Debug.Log("Acting IE");
-        EventCenter.Broadcast(EventDefine.IEaction, actingCard.GetComponent<CardUI>().CardID, actingCard.GetComponent<CardUI>().CardSubject, actingCard.GetComponent<CardUI>().CardType);
+        EventCenter.Broadcast(EventDefine.IEaction,Player, actingCard.GetComponent<CardUI>().CardID, actingCard.GetComponent<CardUI>().CardSubject, actingCard.GetComponent<CardUI>().CardType);
     }
     private void ActingSE()
     {
-        EventCenter.Broadcast(EventDefine.Card2Patent, actingCard.GetComponent<CardUI>().CardID, actingCard.GetComponent<CardUI>().CardSubject);
+        EventCenter.Broadcast(EventDefine.Card2Patent, Player, actingCard.GetComponent<CardUI>().CardID, actingCard.GetComponent<CardUI>().CardSubject);
         Debug.Log("Acting SE");
     }
     private void ActingDS()
@@ -263,6 +344,172 @@ public class SelfManager : MonoBehaviour
             actingCard.SetActive(false);
         });
     }
+    #region Infiltration
+    /// <summary>
+    /// 场上打出渗透牌，Lock On
+    /// </summary>
+    /// <param name="playerInf"></param>
+    private void Infiltration(int playerInf)
+    {
+        if (playerInf == Player)
+        {
+            isInf = true;
+            return;
+        }
+        lockon.gameObject.SetActive(true);
+        lockon.interactable = false;
+        Tweener tweener = lockon.transform.DOScale(0.15f, 0.2f);
+        tweener.OnComplete(() =>
+        {
+            //lockon.interactable = true;
+        });
+    }
+    private void InfiltrationRes(int playerDef,int playerInf)
+    {
+        if (playerDef != Player)
+        {
+
+            PlayerDef = playerDef;
+            lockon.interactable = false;
+            Tweener tweener = lockon.transform.DOScale(0, 0.2f);
+            tweener.OnComplete(() =>
+            {
+                lockon.gameObject.SetActive(false);
+
+            });
+            return;
+        }
+        else
+        {
+            EventCenter.Broadcast<string>(EventDefine.Hint, "遭到渗透");
+            PlayerInf = playerInf;
+            isBeingInf = true;
+            lockon.interactable = false;
+            //Can't Defence
+            if (SearchDefenseCard() == null)
+            {
+                
+                StartCoroutine(WaitForAddPatent());
+                isNoDefCard = true;
+            }
+            //Have Defence Card
+            else
+            {
+                StartCoroutine(WaitForDefenseCard());
+                //StartCoroutine(WaitForDefenseCard());
+            }
+        }
+    }
+    private void InfiltrationFinish(int playerRef, int playerInf)
+    {
+
+        Tweener tweener = lockon.transform.DOScale(0, 0.2f);
+        tweener.OnComplete(() =>
+        {
+            if (isBeingInf)
+            {
+                isBeingInf = false;
+            }
+            if (isInf)
+            {
+                isInf = false;
+            }
+        });
+    }
+    private IEnumerator WaitForAddPatent()
+    {
+        yield return new WaitForSeconds(0.2f);
+        EventCenter.Broadcast<string>(EventDefine.Hint, "无法缓冲");
+        yield return new WaitForSeconds(0.5f);
+        EventCenter.Broadcast<string>(EventDefine.Hint, "申请一个专利");
+        yield return null;
+    }
+    private IEnumerator WaitForDefenseCard()
+    {
+        yield return new WaitForSeconds(0.2f);
+        EventCenter.Broadcast<string>(EventDefine.Hint, "可以缓冲");
+        //yield return new WaitForSeconds(0.5f);
+        //EventCenter.Broadcast<string>(EventDefine.Hint, "申请一个专利");
+        yield return null;
+    }
+    //private IEnumerator WaitForAddPatent()
+    //{
+    //    while (isBeingInf)
+    //    {
+    //        yield return null;
+    //    }
+    //}
+    //private void Defense(int player)
+    //{
+    //    if (player != Player)
+    //    {
+    //        PlayerDef = player;
+    //        return;
+    //    }
+    //    int cardIndex = Id2CardIndex(actingCard.GetComponent<CardUI>().CardID);
+    //    GameObject cardGO = CardsObjectsLists[cardIndex];
+    //    cardGO.transform.SetParent(canvas.transform);
+    //    cardShowMask.gameObject.SetActive(true);
+    //    cardShowMask.DOFade(1, 0.3f);
+    //    Tweener tweener = cardGO.transform.DOLocalMove(new Vector2(0, 0), 0.3f);
+    //    cardGO.transform.SetAsLastSibling();
+    //    tweener.OnComplete(() =>
+    //    {
+    //        lockon.gameObject.SetActive(false);
+    //        StartCoroutine(CardShowDelay(cardGO));
+    //        //EventCenter.Broadcast(EventDefine.InfiltrationFinish, Player, PlayerInf);
+    //    });
+    //}
+    private Card SearchDefenseCard()
+    {
+        for (int i = 0; i < CardNum; i++)
+        {
+            if (CardsList[i].Type == 1)
+            {
+                return CardsList[i];
+            }
+        }
+        return null;
+    }
+    //private IEnumerator CardShowDelay(GameObject cardGO)
+    //{
+    //    yield return new WaitForSeconds(3f);
+    //    int ii = Id2CardIndex(cardGO.GetComponent<CardUI>().CardID);
+    //    Card card = CardsList[ii];
+    //    cardGO.GetComponent<CardUI>().EndShowEffect(0.2f);
+    //    cardGO.GetComponent<CardUI>().isShowing = true;
+    //    //cardGO.transform.DOLocalMove(new Vector2(300, -400), 0.2f);
+    //    Tweener tweener = cardGO.transform.DOScale(0, 0.2f);
+    //    cardShowMask.DOFade(0, 0.2f);
+    //    tweener.OnComplete(() =>
+    //    {
+    //        if (isBeingInf)
+    //        {
+    //            Debug.Log("Player " + Player + " is Being Inf");
+    //            lockon.gameObject.SetActive(false);
+    //            EventCenter.Broadcast(EventDefine.DefenseFinish, Player, PlayerInf);
+    //            isBeingInf = false;
+    //            //EventCenter.Broadcast(EventDefine.InfiltrationFinish, Player, PlayerInf);
+    //        }
+    //        if (isInf)
+    //        {
+    //            Debug.Log("Player " + Player + " is Inf");
+    //            lockon.gameObject.SetActive(false);
+    //            EventCenter.Broadcast(EventDefine.InfiltrationFinish, PlayerDef, Player);
+    //            isInf = false;
+    //        }
+    //        //if (isBeingInf)
+    //        //{
+    //        //    CardsList.Remove(card);
+    //        //    CardsObjectsLists.Remove(cardGO);
+    //        //    Destroy(cardGO);
+    //        //    CardNum = CardsList.Count;
+    //        //}
+    //        cardShowMask.gameObject.SetActive(false);
+    //    });
+    //}
+
+    #endregion
     #endregion
     #region Scientist
     private void ShowSci(int id)
@@ -294,11 +541,24 @@ public class SelfManager : MonoBehaviour
     }
     #endregion
     #region Hand Cards
-    private void InitHandCards()
+    //private void InitHandCards()
+    //{
+    //    discardCount = 0;
+    //    showcardCount = 0;
+    //    for(int i = CardsObjectsLists.Count; i < CardsList.Count; i++)
+    //    {
+    //        DrawHandCards(CardsList[i].Id);
+    //    }
+    //}
+    private void InitHandCards(int player)
     {
+        if (player != Player)
+        {
+            return;
+        }
         discardCount = 0;
         showcardCount = 0;
-        for(int i = CardsObjectsLists.Count; i < CardsList.Count; i++)
+        for (int i = CardsObjectsLists.Count; i < CardsList.Count; i++)
         {
             DrawHandCards(CardsList[i].Id);
         }
@@ -314,17 +574,18 @@ public class SelfManager : MonoBehaviour
             Card card = GameManager.cardPile[0];
             CardsList.Add(card);
             CardNum = CardsList.Count;
-            GameManager.cardPile.RemoveAt(0);
+            GameManager.SetCardPile(card);
         }
         if (isIniting == false)
         {
-            InitHandCards();
+            InitHandCards(Player);
 
         }
     }
 
     private void DrawHandCards(int id)
     {
+        Debug.Log("Player " + Player + " Draw Card " + id);
         GameObject cardGO = Instantiate(cardPre, cards.transform, true);
         cardGO.transform.localScale = new Vector2(0.85f, 0.85f);
         cardGO.transform.name = "Card_" + id;
@@ -342,9 +603,14 @@ public class SelfManager : MonoBehaviour
     private void HandCardsShuffle()
     {
         int count = 0;
+        if (CardsObjectsLists.Count == 0)
+        {
+            EventCenter.Broadcast(EventDefine.DrawCardFinish);
+            return;
+        }
         for (int i = 0; i < CardsObjectsLists.Count; i++)
         {
-            Tweener tweener = CardsObjectsLists[i].transform.DOLocalMove(new Vector2(cardsPoint.transform.localPosition.x + i * 1000 / CardsObjectsLists.Count, cardsPoint.transform.localPosition.y - 350), 0.3f);
+            Tweener tweener = CardsObjectsLists[i].transform.DOLocalMove(new Vector2(cardsPoint.transform.localPosition.x + i * 800 / CardsObjectsLists.Count, cardsPoint.transform.localPosition.y - 350), 0.3f);
             tweener.OnComplete(() =>
             {
                 ++count;
@@ -460,7 +726,14 @@ public class SelfManager : MonoBehaviour
                     GameManager.patentAll.Add(patent);
                     CardNum = CardsList.Count;
                     EventCenter.Broadcast(EventDefine.StopCardActing);
-                    EventCenter.Broadcast(EventDefine.Acted);
+                    if (isBeforeAction)
+                    {
+                        EventCenter.Broadcast(EventDefine.Acted);
+                    }
+                    if (isBeingInf)
+                    {
+                        EventCenter.Broadcast(EventDefine.InfiltrationFinish, Player, PlayerInf);
+                    }
                     return;
                 });
             }
@@ -485,11 +758,21 @@ public class SelfManager : MonoBehaviour
             GameManager.patentObjectAll.Add(patentGO);
             patentGO.GetComponent<PatentUI>().PatentInfoPosition();
             HandCardsShuffle();
+            if (isBeingInf)
+            {
+                lockon.gameObject.SetActive(false);
+                EventCenter.Broadcast(EventDefine.DefenseFinish, Player, PlayerInf);
+                isBeingInf = false;
+            }
         });
     }
     
-    private void Card2Patent(int id,int subject)
+    private void Card2Patent(int player, int id,int subject)
     {
+        if (player != Player)
+        {
+            return;
+        }
         AddPatent(id, subject); 
     }
     #endregion
@@ -525,6 +808,7 @@ public class SelfManager : MonoBehaviour
         {
             return;
         }
+        isBeforeAction = true;
         btn_ie.interactable = true;
         btn_se.interactable = true;
         btn_show.interactable = false;
@@ -540,6 +824,7 @@ public class SelfManager : MonoBehaviour
         {
             return;
         }
+        isBeforeAction = false;
         btn_ie.interactable = false;
         btn_se.interactable = false;
         btn_show.interactable = false;
@@ -558,11 +843,11 @@ public class SelfManager : MonoBehaviour
         int drawNum = sciLimit - CardNum;
         if (drawNum <= 0)
         {
-            GameManager.SetDrawNum(0, 0);
-            EventCenter.Broadcast(EventDefine.DrawCardFinish);
+            GameManager.SetDrawNum(Player, 0);
+            
         }
         else
-            GameManager.SetDrawNum(0, drawNum);
+            GameManager.SetDrawNum(Player, drawNum);
     }
     /// <summary>
     /// 研究阶段 弃牌

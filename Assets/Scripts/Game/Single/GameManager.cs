@@ -1,11 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
-using DG.Tweening;
-using UnityEngine.EventSystems;
-using UnityEngine.Events;
 
 public class GameManager : MonoBehaviour
 {
@@ -25,6 +21,7 @@ public class GameManager : MonoBehaviour
     public static bool isGameEnd = true;
     private int RoundNum=0;
     private int PlayerStart;
+    private float GameProcessTime = 1.5f;
 
     //GameObject
     private GameObject player0;
@@ -39,19 +36,21 @@ public class GameManager : MonoBehaviour
     private GameObject gamePanel;
 
     //Text
-    private Text cardPileText;
+    private static Text cardPileText;
     private static Text discardPileText;
 
     //Image
     private Image maskBG;
 
     //Int
-    private int playerNum=0;
+    public static int playerNum=0;
     private int cardNum = 0;
     private int CurPlayer;
 
     //List
     private static int[] PlayerDrawNum;
+    public int[] PatentNum;
+    public int[] CardNum;
     public static List<Card> cardPile = new List<Card>();
     public static List<Card> disCardPile = new List<Card>();
     public static List<Patent> patentAll = new List<Patent>();
@@ -74,7 +73,7 @@ public class GameManager : MonoBehaviour
     }
     void Start()
     {
-
+        //RandomSciId();
         //StartCoroutine(GameLoop());
     }
     // Update is called once per frame
@@ -151,12 +150,14 @@ public class GameManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator GameStart()
     {
+
         Croupier();
         RoundNum = 1;
         cardPileText.text = cardPile.Count.ToString();
-        EventCenter.Broadcast<string>(EventDefine.Hint, "Game Start");
+        EventCenter.Broadcast(EventDefine.GameStart);
+        EventCenter.Broadcast<string>(EventDefine.Hint, "游戏开始");
         Debug.Log("Game Start");
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(GameProcessTime);
     }
     /// <summary>
     /// 游戏结束
@@ -164,7 +165,7 @@ public class GameManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator GameEnd()
     {
-        EventCenter.Broadcast<string>(EventDefine.Hint, "Game End");
+        EventCenter.Broadcast<string>(EventDefine.Hint, "游戏结束");
         Debug.Log("Game End");
         yield return null;
     }
@@ -175,9 +176,9 @@ public class GameManager : MonoBehaviour
     private IEnumerator s0_RoundStart()
     {
         isRoundStart = true;
-        EventCenter.Broadcast<string>(EventDefine.Hint, "Round " + RoundNum + " Start");
+        EventCenter.Broadcast<string>(EventDefine.Hint, "第" + RoundNum + "回合开始");
         Debug.Log("Round " + RoundNum + " Start");
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(GameProcessTime);
     }
     /// <summary>
     /// 玩家回合开始
@@ -188,9 +189,9 @@ public class GameManager : MonoBehaviour
         Debug.Log("Player " + CurPlayer);
    
         isPlayerRoundStart = true;
-        if (RoundNum == 1 && CurPlayer == 0)
+        if (RoundNum == 1 && CurPlayer==0)
         {
-            EventCenter.Broadcast(EventDefine.InitHandCard);
+            EventCenter.Broadcast(EventDefine.InitHandCard,CurPlayer);
             EventCenter.Broadcast<string>(EventDefine.Hint, "你的回合");
         }
         else if (CurPlayer == 0)
@@ -199,10 +200,10 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            EventCenter.Broadcast<string>(EventDefine.Hint, "Player " + CurPlayer + "'s Turn");
+            EventCenter.Broadcast<string>(EventDefine.Hint, "玩家" + CurPlayer + "的回合");
             Debug.Log("Player " + CurPlayer + "'s Turn");
         }
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(GameProcessTime);
     }
     /// <summary>
     /// 回合开始阶段
@@ -240,7 +241,7 @@ public class GameManager : MonoBehaviour
         isAfterAction = true;
         EventCenter.Broadcast(EventDefine.s4_AfterAction, CurPlayer);
         Debug.Log("Player " + CurPlayer + " After Action");
-        yield return null;
+        yield return new WaitForSeconds(GameProcessTime);
     }
     /// <summary>
     /// 研究阶段开始
@@ -253,31 +254,12 @@ public class GameManager : MonoBehaviour
         EventCenter.Broadcast<string>(EventDefine.Hint, "研究阶段");
         Debug.Log("研究阶段 " + CurPlayer + " " + PlayerDrawNum[CurPlayer]);
         EventCenter.Broadcast(EventDefine.CardDraw, CurPlayer, PlayerDrawNum[CurPlayer]);
-        //switch (CurPlayer)
-        //{
-        //    case 0:
-        //        EventCenter.Broadcast(EventDefine.DrawCard0, PlayerDrawNum[0]);
-        //        Debug.Log("player 0 draw card");
-        //        break;
-        //    case 1:
-        //        EventCenter.Broadcast(EventDefine.DrawCard1, PlayerDrawNum[1]);
-        //        Debug.Log("player 1 draw card");
-        //        break;
-        //    case 2:
-        //        EventCenter.Broadcast(EventDefine.DrawCard2, PlayerDrawNum[2]);
-        //        Debug.Log("player 2 draw card");
-        //        break;
-        //    case 3:
-        //        EventCenter.Broadcast(EventDefine.DrawCard3, PlayerDrawNum[3]);
-        //        Debug.Log("player 3 draw card");
-        //        break;
-        //}
         while (isBeforeDraw)
         {
             Debug.Log("is Drawing");
             yield return null;
         }
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(GameProcessTime);
     }
     /// <summary>
     /// 研究阶段弃牌
@@ -301,7 +283,7 @@ public class GameManager : MonoBehaviour
     {
         EventCenter.Broadcast(EventDefine.s7_AfterDiscard, CurPlayer);
         isAfterDiscard = true;
-        yield return null;
+        yield return new WaitForSeconds(GameProcessTime);
     }
     /// <summary>
     /// 维护阶段开始
@@ -325,8 +307,16 @@ public class GameManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator s9_PlayerRoundEnd()
     {
+        if (CurPlayer == 0)
+        {
+            EventCenter.Broadcast<string>(EventDefine.Hint, "你的回合结束");
+        }
+        else
+        {
+            EventCenter.Broadcast<string>(EventDefine.Hint, "玩家" + CurPlayer + "的回合结束");
+        }
         isPlayerRoundEnd = true;
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(GameProcessTime);
     }
     /// <summary>
     /// 回合结束
@@ -334,9 +324,10 @@ public class GameManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator s10_RoundEnd()
     {
+        EventCenter.Broadcast<string>(EventDefine.Hint, "第" + RoundNum + "回合结束");
         isRoundEnd = true;
         ++RoundNum;
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(GameProcessTime);
     }
     #endregion
     private void Init()
@@ -376,7 +367,7 @@ public class GameManager : MonoBehaviour
             StartCoroutine("GameLoop");
             isGameStart = true;
             startGame.gameObject.SetActive(false);
-            EventCenter.Broadcast(EventDefine.GameStart);
+            //EventCenter.Broadcast(EventDefine.GameStart);
         });
         //EventCenter.AddListener(EventDefine.GameStart, () =>
         //{
@@ -388,6 +379,7 @@ public class GameManager : MonoBehaviour
         });
         EventCenter.AddListener(EventDefine.DrawCardFinish, () =>
         {
+            Debug.Log("DrawCardFinish!!!!!");
             SetFalse();
         });
         EventCenter.AddListener(EventDefine.DiscardFinish, () =>
@@ -417,6 +409,17 @@ public class GameManager : MonoBehaviour
         //Rect screenRect = new Rect(-screenWidth / 2, -screenHeight / 2, screenWidth, screenHeight);
         //Debug.Log(screenRect.xMin + " " + screenRect.yMin + " " + screenRect.xMax + " " + screenRect.yMax);
     }
+    //private void RandomSciId()
+    //{
+    //    int[] sciIdArr = new int[playerNum-1];
+    //    for(int i=0;i< sciIdArr.Length; i++)
+    //    {
+    //        sciIdArr[i] = 2 * i + Random.Range(0, 1);
+    //        EventCenter.Broadcast(EventDefine.EnemySci, i, sciIdArr[i]);
+    //        Debug.Log("sciID: " + sciIdArr[i]);
+    //    }
+        
+    //}
     private void PlayerSet()
     {
         player0 = transform.Find("Player0").gameObject;
@@ -451,6 +454,11 @@ public class GameManager : MonoBehaviour
     {
         disCardPile.Add(card);
         discardPileText.text = disCardPile.Count.ToString();
+    }
+    public static void SetCardPile(Card card)
+    {
+        cardPile.Remove(card);
+        cardPileText.text = cardPile.Count.ToString();
     }
     #region Crouiper
     /// <summary>
@@ -529,6 +537,7 @@ public class GameManager : MonoBehaviour
     }
     public static void SetDrawNum(int player,int num)
     {
+        Debug.Log("Player: " + player + " Num: " + num);
         PlayerDrawNum[player] = num;
     }
     #endregion

@@ -11,7 +11,7 @@ public class PatentUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     public bool isShowingPatent = false;
     public bool isEndShowingPatent = false;
     public bool isFront;
-    public bool isPublic;
+    public bool isPrivate;
     public int PatentID = -1;
     public int PatentSubject = -1;
 
@@ -121,7 +121,7 @@ public class PatentUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
             patentIE.resizeTextForBestFit = false;
             patentIE.alignment = (TextAnchor)TextAlignment.Left;
         }
-        if (isPublic)
+        if (isPrivate)
         {
             patentState.text = "状态：公有";
         }

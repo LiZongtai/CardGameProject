@@ -9,7 +9,8 @@ using UnityEngine.EventSystems;
 public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler,IPointerClickHandler
 {
     //public
-    public bool isFront;
+    public bool isFront=true;
+    public bool isBack=false;
     public bool isShowing=false;
     public int CardID = -1;
     public int CardType=-1;
@@ -255,6 +256,9 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler,I
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        EventCenter.Broadcast(EventDefine.CardActing, gameObject);
+        if (isBack == false)
+        {
+            EventCenter.Broadcast(EventDefine.CardActing, gameObject);
+        }
     }
 }
